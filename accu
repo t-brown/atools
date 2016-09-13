@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+#
+# Script to find allocations over 95% (core hrs)
+# and email the user.
+#
+# Example of cron entry
+# MAILTO=Timothy.P.Brown@noaa.gov
+# 3 1 * * * /apps/usr/local/ausage
+#
+
+#set -x
+
+# Globals/Defaults
+PERCENT=95              # Default percentage to report if over.
+ACCOUNTS=($(groups))    # Default all groups.
+RERUN=0                 # Default re-run (vs only notify once).
+UDIR="${HOME}/.ausage"  # Usage directory
+
+#
+main()
+{
+	parse_args $@
+	create_ud
+	for account in "${ACCOUNTS[@]}" ; do
+		check_acc "${account}"
+	done
+}
+
+# Usage statement
+usage()
+{
+	echo ""
+	echo "usage: $0 [-A] [-a acct] [-p #] [-r]"
+	echo "  -A       Append to account list."
+	echo "           (default is not to append to the default list)"
+	echo "  -a acct  Account to report on."
+	echo "           (default is all groups)"
+	echo "  -p #     Percentage threshold to report on."
+	echo "           (default is ${PERCENT}%)"
+	echo "  -r       Re-run the report."
+	echo "           (default is to report only once a month)"
+	echo ""
+	exit 1
+}
+
+# Parse the command line arguments
+parse_args()
+{
+	accounts=()
+	while getopts ":Aa:hp:r" opt ; do
+		case $opt in
+			A) append=1 ;;
+			a) accounts+=(${OPTARG}) ;;
+			h) usage ;;
+			p) PERCENT=$OPTARG ;;
+			r) RERUN=1 ;;
+			\?) echo "Invalid option: -$OPTARG" >&2; usage ;;
+		esac
+	done
+
+	if [ "$append" ] ; then
+		ACCOUNTS+=(${accounts[@]})
+	else
+		ACCOUNTS=(${accounts[@]})
+	fi
+}
+
+# Create a usage directory
+create_ud()
+{
+	if [ ! -d "${UDIR}" ] ; then
+		mkdir "${UDIR}"
+	fi
+}
+
+# Check the allocation
+check_acc()
+{
+	acc=$1
+	per=$(printf '%0.f' \
+	      $(gbalance --quiet --format raw --show PercentUsed -a ${acc}))
+	if [ "$per" -ge "$PERCENT" ] ; then
+
+		# check to see if we have already reported
+		log_acc $acc
+		if [ $? -ne 0 ] ; then
+			return
+		fi
+
+		# mail the user
+		mail -s "Jet ${acc} usage notification" \
+		     -r regress@noaa.gov                  \
+			Timothy.P.Brown@noaa.gov <<-EOB
+
+		Dear ${USER},
+
+		${acc} usage on Jet is currently at ${per}%  of the allocated monthly
+		core hours.
+
+		Regards,
+		Jet Management
+
+		Jet Help: Email rdhpcs.jet.help@noaa.gov
+		Jet Docs: https://wiki.rdhpcs.noaa.gov/wikis/jetdocs/
+		Jet System Status: http://rdhpcs.noaa.gov/boulder/systems/hpcsact.html
+		AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
+		EOB
+	fi
+}
+
+# Log (and check) to see if we have reported this account for this month
+log_acc()
+{
+	acc=$1
+	if [ -f "${UDIR}/${acc}" ] ; then
+		last=$(stat -c "%y" ${UDIR}/${acc} |\
+			awk '{print $1}'           |\
+			awk -F"-" '{print $1"-"$2}')
+		now=$(date +"%Y-%m")
+
+		if [ "${now}" = "${last}" \
+		     -a "${RERUN}" -eq 0 ] ; then
+		     return 1
+		fi
+	fi
+
+	touch ${UDIR}/${acc}
+}
+
+main $@
