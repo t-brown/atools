@@ -5,10 +5,10 @@
 #
 # Example of cron entry
 # MAILTO=Timothy.P.Brown@noaa.gov
-# 3 1 * * * /apps/usr/local/ausage -m
+# 3 1 * * * /apps/local/bin/account_usage -m
 #
 
-set -x
+#set -x
 
 # Globals/Defaults
 PERCENT=95              # Default percentage to report if over.
