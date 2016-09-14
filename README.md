@@ -2,5 +2,5 @@
 ## Account Tools
 
 A few shell scripts to enable easier account usage reports.
-* `accu` Account core hour usage.
-* `accd` Account disk usage.
+* `account_hours` Account core hour usage.
+* `account_disk` Account disk usage.
