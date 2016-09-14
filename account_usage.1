@@ -4,21 +4,21 @@
 .\"
 .Dd September 6, 2016
 .Os
-.Dt AUSAGE 1 CON
+.Dt ACCOUNT_USAGE 1 CON
 .Sh NAME
-.Nm accu
-.Nd account core hour usage notification email
+.Nm account_usage
+.Nd account core hour usage notification
 .Sh SYNOPSIS
 .Nm
 .Op Fl h
 .Op Fl A
 .Op Fl a Ar acct
+.Op Fl m
 .Op Fl p Ar #
 .Op Fl r
 .Sh DESCRIPTION
 .Nm
-is a shell script to generate an email warning of account cpu hour
-usage. It uses
+is a shell script to generate a warning of account cpu hour usage. It uses
 .Nm gbalance
 to obtain the percentage of the monthly allocation used.
 .Pp
@@ -31,8 +31,10 @@ Append the account to the end of the default accounts.
 .It Fl a Ar acct
 Check the usage of the account
 .Ar acct
+.It Fl m
+Send the report via email.
 .It Fl p Ar #
-Generate an email if the usage is greater that
+Generate a report if the usage is greater that
 .Ar #
 percentage.
 .It Fl r
@@ -40,11 +42,11 @@ Re-run the usage, even if a report has been generated this month.
 .Sh EXAMPLES
 The command:
 .Pp
-.Dl "accu"
+.Dl "account_usage"
 .Pp
 Will check the cpu hours for all the projects you are a member of. While,
 .Pp
-.Dl "accu -p 75 -a dtc-hurr"
+.Dl "account_usage -p 75 -a dtc-hurr"
 .Pp
 will check the cpu hours for the dtc-hurr project and report if it has
 used more than 75% of the allocation this month.
@@ -53,7 +55,7 @@ An example of calling
 .Nm
 from a crontab would be:
 .Dl "MAILTO=Timothy.P.Brown@noaa.gov"
-.Dl "3 0 * * * accu"
+.Dl "3 0 * * * account_usage -m"
 .Sh EXIT STATUS
 .Ex -std
 .Sh SEE ALSO

@@ -5,14 +5,15 @@
 #
 # Example of cron entry
 # MAILTO=Timothy.P.Brown@noaa.gov
-# 3 1 * * * /apps/usr/local/ausage
+# 3 1 * * * /apps/usr/local/ausage -m
 #
 
-#set -x
+set -x
 
 # Globals/Defaults
 PERCENT=95              # Default percentage to report if over.
 ACCOUNTS=($(groups))    # Default all groups.
+MAIL=0                  # Default to stdout.
 RERUN=0                 # Default re-run (vs only notify once).
 UDIR="${HOME}/.atools"  # Usage directory
 
@@ -30,11 +31,13 @@ main()
 usage()
 {
 	echo ""
-	echo "usage: $0 [-A] [-a acct] [-p #] [-r]"
+	echo "usage: $0 [-A] [-a acct] [-m] [-p #] [-r]"
 	echo "  -A       Append to account list."
 	echo "           (default is not to append to the default list)"
 	echo "  -a acct  Account to report on."
 	echo "           (default is all groups)"
+	echo "  -m       Mail the report."
+	echo "           (default is to print to stdout)"
 	echo "  -p #     Percentage threshold to report on."
 	echo "           (default is ${PERCENT}%)"
 	echo "  -r       Re-run the report."
@@ -46,19 +49,21 @@ usage()
 # Parse the command line arguments
 parse_args()
 {
-	accounts=()
-	while getopts ":Aa:hp:r" opt ; do
+	local append=0
+	local accounts=()
+	while getopts ":Aa:hmp:r" opt ; do
 		case $opt in
 			A) append=1 ;;
 			a) accounts+=(${OPTARG}) ;;
 			h) usage ;;
+			m) MAIL=1 ;;
 			p) PERCENT=$OPTARG ;;
 			r) RERUN=1 ;;
 			\?) echo "Invalid option: -$OPTARG" >&2; usage ;;
 		esac
 	done
 
-	if [ "$append" ] ; then
+	if [ "$append" -eq 1 ] ; then
 		ACCOUNTS+=(${accounts[@]})
 	else
 		ACCOUNTS=(${accounts[@]})
@@ -76,8 +81,8 @@ create_ud()
 # Check the allocation
 check_acc()
 {
-	acc=$1
-	per=$(printf '%0.f' \
+	local acc=$1
+	local per=$(printf '%0.f' \
 	      $(gbalance --quiet --format raw --show PercentUsed -a ${acc}))
 	if [ "$per" -ge "$PERCENT" ] ; then
 
@@ -87,31 +92,35 @@ check_acc()
 			return
 		fi
 
-		# mail the user
-		mail -s "Jet ${acc} usage notification" \
-		     -r regress@noaa.gov                  \
-			Timothy.P.Brown@noaa.gov <<-EOB
+		if [ "$MAIL" -eq 1 ] ; then
+			# mail the user
+			mail -s "Jet ${acc} usage notification" \
+			     -r regress@noaa.gov                \
+				${USER}@noaa.gov <<-EOB
 
-		Dear ${USER},
+			Dear ${USER},
 
-		${acc} usage on Jet is currently at ${per}%  of the allocated monthly
-		core hours.
+			${acc} usage on Jet is currently at ${per}%  of the allocated monthly
+			core hours.
 
-		Regards,
-		Jet Management
+			Regards,
+			Jet Management
 
-		Jet Help: Email rdhpcs.jet.help@noaa.gov
-		Jet Docs: https://wiki.rdhpcs.noaa.gov/wikis/jetdocs/
-		Jet System Status: http://rdhpcs.noaa.gov/boulder/systems/hpcsact.html
-		AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
-		EOB
+			Jet Help: Email rdhpcs.jet.help@noaa.gov
+			Jet Docs: https://wiki.rdhpcs.noaa.gov/wikis/jetdocs/
+			Jet System Status: http://rdhpcs.noaa.gov/boulder/systems/hpcsact.html
+			AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
+			EOB
+		else
+			echo "${acc} usage on Jet is currently at ${per}%  of the allocated monthly core hours."
+		fi
 	fi
 }
 
 # Log (and check) to see if we have reported this account for this month
 log_acc()
 {
-	acc="${1}.cpu"
+	local acc="${1}.cpu"
 	if [ -f "${UDIR}/${acc}" ] ; then
 		last=$(stat -c "%y" ${UDIR}/${acc} |\
 			awk '{print $1}'           |\
