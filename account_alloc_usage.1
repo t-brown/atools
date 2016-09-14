@@ -1,0 +1,74 @@
+.\"-
+.\" Manual page written by Timothy Brown <Timothy.P.Brown@noaa.org>
+.\"
+.\"
+.Dd September 6, 2016
+.Os
+.Dt ACCOUNT_ALLOC_USAGE 1 CON
+.Sh NAME
+.Nm account_alloc_usage
+.Nd account core hour usage notification
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl A
+.Op Fl a Ar acct
+.Op Fl m
+.Op Fl p Ar #
+.Op Fl r
+.Sh DESCRIPTION
+.Nm
+is a shell script to generate a warning of account cpu hour usage. It uses
+.Nm gbalance
+to obtain the percentage of the monthly allocation used.
+.Pp
+The following options are available:
+.Bl -tag -width flag
+.It Fl h
+Display a short help message and exit.
+.It Fl A
+Append the account to the end of the default accounts.
+.It Fl a Ar acct
+Check the usage of the account
+.Ar acct
+.It Fl m
+Send the report via email.
+.It Fl p Ar #
+Generate a report if the usage is greater that
+.Ar #
+percentage.
+.It Fl r
+Re-run the usage, even if a report has been generated this month.
+.Sh EXAMPLES
+The command:
+.Pp
+.Dl "account_alloc_usage"
+.Pp
+Will check the cpu hours for all the projects you are a member of. While,
+.Pp
+.Dl "account_alloc_usage -p 75 -a dtc-hurr"
+.Pp
+will check the cpu hours for the dtc-hurr project and report if it has
+used more than 75% of the allocation this month.
+.Pp
+An example of calling
+.Nm
+from a crontab would be:
+.Dl "MAILTO=Timothy.P.Brown@noaa.gov"
+.Dl "3 0 * * * account_alloc_usage -m"
+.Sh EXIT STATUS
+.Ex -std
+.Sh SEE ALSO
+.Xr bash 1 ,
+.Xr awk 1 ,
+.Xr mail 1 ,
+.Sh STANDARDS
+The
+.Nm
+command is expected to be
+.St -p1003.2
+compatible.
+.Sh AUTHOR
+Written by Timothy Brown
+.Sh BUGS
+Report bugs to <Timothy.P.Brown@noaa.gov>
