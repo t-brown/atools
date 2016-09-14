@@ -14,7 +14,7 @@
 PERCENT=95              # Default percentage to report if over.
 ACCOUNTS=($(groups))    # Default all groups.
 RERUN=0                 # Default re-run (vs only notify once).
-UDIR="${HOME}/.ausage"  # Usage directory
+UDIR="${HOME}/.atools"  # Usage directory
 
 #
 main()
@@ -111,7 +111,7 @@ check_acc()
 # Log (and check) to see if we have reported this account for this month
 log_acc()
 {
-	acc=$1
+	acc="${1}.cpu"
 	if [ -f "${UDIR}/${acc}" ] ; then
 		last=$(stat -c "%y" ${UDIR}/${acc} |\
 			awk '{print $1}'           |\

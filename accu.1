@@ -6,7 +6,7 @@
 .Os
 .Dt AUSAGE 1 CON
 .Sh NAME
-.Nm ausage
+.Nm accu
 .Nd account core hour usage notification email
 .Sh SYNOPSIS
 .Nm
@@ -40,11 +40,11 @@ Re-run the usage, even if a report has been generated this month.
 .Sh EXAMPLES
 The command:
 .Pp
-.Dl "ausage"
+.Dl "accu"
 .Pp
 Will check the cpu hours for all the projects you are a member of. While,
 .Pp
-.Dl "ausage -p 75 -a dtc-hurr"
+.Dl "accu -p 75 -a dtc-hurr"
 .Pp
 will check the cpu hours for the dtc-hurr project and report if it has
 used more than 75% of the allocation this month.
@@ -53,7 +53,7 @@ An example of calling
 .Nm
 from a crontab would be:
 .Dl "MAILTO=Timothy.P.Brown@noaa.gov"
-.Dl "3 0 * * * ausage"
+.Dl "3 0 * * * accu"
 .Sh EXIT STATUS
 .Ex -std
 .Sh SEE ALSO
