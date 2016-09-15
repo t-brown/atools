@@ -4,23 +4,26 @@
 .\"
 .Dd September 6, 2016
 .Os
-.Dt ACCOUNT_ALLOC_USAGE 1 CON
+.Dt ACCOUNT_DU_USAGE 1 CON
 .Sh NAME
-.Nm account_alloc_usage
-.Nd account core hour usage notification
+.Nm account_du_usage
+.Nd account disk usage notification email
 .Sh SYNOPSIS
 .Nm
 .Op Fl h
 .Op Fl A
 .Op Fl a Ar acct
+.Op Fl f
 .Op Fl m
 .Op Fl p Ar #
 .Op Fl r
 .Sh DESCRIPTION
 .Nm
-is a shell script to generate a warning of account cpu hour usage. It uses
-.Nm gbalance
-to obtain the percentage of the monthly allocation used.
+is a shell script to generate an email warning of account disk
+usage. It uses
+.Nm the generated quota files under
+.B /home/admin/monitoring/quotas/reports/
+to obtain the percentage of disk allocation used.
 .Pp
 The following options are available:
 .Bl -tag -width flag
@@ -31,8 +34,10 @@ Append the account to the end of the default accounts.
 .It Fl a Ar acct
 Check the usage of the account
 .Ar acct
+.It Fl f
+Generate a full report, on lustre this is two deep.
 .It Fl m
-Send the report via email.
+Email the report, instead of printing to stdout.
 .It Fl p Ar #
 Generate a report if the usage is greater that
 .Ar #
@@ -42,25 +47,26 @@ Re-run the usage, even if a report has been generated this month.
 .Sh EXAMPLES
 The command:
 .Pp
-.Dl "account_alloc_usage"
+.Dl "account_du_usage"
 .Pp
-Will check the cpu hours for all the projects you are a member of. While,
+Will check the disk for all the projects you are a member of. While,
 .Pp
-.Dl "account_alloc_usage -p 75 -a dtc-hurr"
+.Dl "account_du_usage -p 75 -a dtc-hurr"
 .Pp
-will check the cpu hours for the dtc-hurr project and report if it has
-used more than 75% of the allocation this month.
+will check the disk usage for the dtc-hurr project and report if it has
+used more than 75% of the quota.
 .Pp
 An example of calling
 .Nm
 from a crontab would be:
 .Dl "MAILTO=Timothy.P.Brown@noaa.gov"
-.Dl "3 0 * * * account_alloc_usage -m"
+.Dl "3 0 * * * "account_du_usage -f -m "
 .Sh EXIT STATUS
 .Ex -std
 .Sh SEE ALSO
 .Xr bash 1 ,
 .Xr awk 1 ,
+.Xr grep 1 ,
 .Xr mail 1 ,
 .Sh STANDARDS
 The

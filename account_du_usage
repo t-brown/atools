@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+#
+# Script to report disk allocation over 95%
+# and email the user.
+#
+# Example of cron entry
+# MAILTO=Timothy.P.Brown@noaa.gov
+# 3 1 * * * /apps/usr/local/account_du_usage
+#
+
+#set -x
+
+# Globals/Defaults
+PERCENT=95              # Default percentage to report if over.
+ACCOUNTS=($(groups))    # Default all groups.
+RERUN=0                 # Default re-run (vs only notify once).
+MAIL=0                  # Default do not email.
+FULL=0                  # Default to report just group and yourself.
+UDIR="${HOME}/.atools"  # Usage directory
+
+# File systems and quota report directory and file pre-fix
+FS=("lfs2" "lfs3" "pan2")
+QDIR="/home/admin/monitoring/quotas/reports/"
+RFILE="quota."
+
+#
+main()
+{
+	parse_args $@
+	create_ud
+	for account in "${ACCOUNTS[@]}" ; do
+		check_du "${account}"
+	done
+}
+
+# Usage statement
+usage()
+{
+	echo ""
+	echo "usage: $0 [-A] [-a acct] [-f] [-m] [-p #] [-r]"
+	echo "  -A       Append to account list."
+	echo "           (default is not to append to the default list)"
+	echo "  -a acct  Account to report on."
+	echo "           (default is all groups)"
+	echo "  -f       Full account report (all users of the group)."
+	echo "  -m       Mail the report."
+	echo "           (default is to print to stdout)"
+	echo "  -p #     Percentage threshold to report on."
+	echo "           (default is ${PERCENT}%)"
+	echo "  -r       Re-run the report."
+	echo "           (default is to report only once a month)"
+	echo ""
+	exit 1
+}
+
+# Parse the command line arguments
+parse_args()
+{
+	local accounts=()
+	while getopts ":Aa:hfmp:r" opt ; do
+		case $opt in
+			A) append=1 ;;
+			a) accounts+=(${OPTARG}) ;;
+			h) usage ;;
+			f) FULL=1 ;;
+			m) MAIL=1 ;;
+			p) PERCENT=$OPTARG ;;
+			r) RERUN=1 ;;
+			\?) echo "Invalid option: -$OPTARG" >&2; usage ;;
+		esac
+	done
+
+	if [ "${#accounts[@]}" -ne 0 ] ; then
+		if [ "$append" ] ; then
+			ACCOUNTS+=(${accounts[@]})
+		else
+			ACCOUNTS=(${accounts[@]})
+		fi
+	fi
+}
+
+# Create a usage directory
+create_ud()
+{
+	if [ ! -d "${UDIR}" ] ; then
+		mkdir "${UDIR}"
+	fi
+}
+
+# Check the disk usage
+check_du()
+{
+	local acc=$1
+	local fs=""
+	local file=""
+	local line=""
+	local per=0
+
+	for fs in "${FS[@]}" ; do
+
+		# check to see if we have already reported
+		log_acc "${acc}_${fs}"
+		if [ $? -ne 0 ] ; then
+			return
+		fi
+
+		# make sure the quota file exists
+		file="${QDIR}${RFILE}${fs}"
+		if [ ! -e ${file} ] ; then
+			echo "No quota file for ${fs}: ${file}" >&2
+			exit 1
+		fi
+
+		# see if we are on the file system
+		line=$(grep "^$acc" ${file})
+		per=0
+		if [ -n "$line" ] ; then
+			per=$(printf '%0.f'                 \
+				$(echo $line               |\
+				  grep -o '[[:digit:].]*%' |\
+				  tr -d '%'))
+		fi
+
+		if [ "$per" -ge "$PERCENT" ] ; then
+			if [ "${FULL}" -eq 1 ] &&\
+			   grep -q "lfs" <<<"$fs" ; then
+				line=$(sed -n ':s;/'"$acc"'/{:l;p;n;/^\w/bs;bl;}' $file)
+			else
+				line=""
+			fi
+
+			if [ "$MAIL" -eq 1 ] ; then
+				# mail the user
+				mail -s "Jet ${acc} usage notification" \
+				     -r regress@noaa.gov                  \
+					Timothy.P.Brown@noaa.gov <<-EOB
+					Dear ${USER},
+
+					${acc} usage on ${fs} is currently at ${per}% of quota.
+
+					${line}
+
+					Regards,
+					Jet Management
+
+					Jet Help: Email rdhpcs.jet.help@noaa.gov
+					Jet Docs: https://wiki.rdhpcs.noaa.gov/wikis/jetdocs/
+					Jet System Status: http://rdhpcs.noaa.gov/boulder/systems/hpcsact.html
+					AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
+					EOB
+			else
+				echo "${acc} usage on ${fs} is currently at ${per}% of quota."
+				echo "${line}"
+			fi
+		fi
+	done
+}
+
+# Log (and check) to see if we have reported this account for this month
+log_acc()
+{
+	local acc="${1}.du"
+	if [ -f "${UDIR}/${acc}" ] ; then
+		last=$(stat -c "%y" ${UDIR}/${acc} |\
+			awk '{print $1}'           |\
+			awk -F"-" '{print $1"-"$2}')
+		now=$(date +"%Y-%m")
+
+		if [ "${now}" = "${last}" \
+		     -a "${RERUN}" -eq 0 ] ; then
+		     return 1
+		fi
+	fi
+
+	touch ${UDIR}/${acc}
+}
+
+main $@

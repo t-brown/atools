@@ -5,7 +5,7 @@
 #
 # Example of cron entry
 # MAILTO=Timothy.P.Brown@noaa.gov
-# 3 1 * * * /apps/local/bin/account_alloc_usage -m
+# 3 1 * * * /apps/local/bin/account_ch_usage -m
 #
 
 #set -x
@@ -63,10 +63,12 @@ parse_args()
 		esac
 	done
 
-	if [ "$append" -eq 1 ] ; then
-		ACCOUNTS+=(${accounts[@]})
-	else
-		ACCOUNTS=(${accounts[@]})
+	if [ "${#accounts[@]}" -ne 0 ] ; then
+		if [ "$append" -eq 1 ] ; then
+			ACCOUNTS+=(${accounts[@]})
+		else
+			ACCOUNTS=(${accounts[@]})
+		fi
 	fi
 }
 
@@ -100,7 +102,7 @@ check_acc()
 
 			Dear ${USER},
 
-			${acc} usage on Jet is currently at ${per}%  of the allocated monthly
+			${acc} usage on Jet is currently at ${per}% of the allocated monthly
 			core hours.
 
 			Regards,
@@ -112,7 +114,7 @@ check_acc()
 			AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
 			EOB
 		else
-			echo "${acc} usage on Jet is currently at ${per}%  of the allocated monthly core hours."
+			echo "${acc} usage on Jet is currently at ${per}% of the allocated monthly core hours."
 		fi
 	fi
 }
