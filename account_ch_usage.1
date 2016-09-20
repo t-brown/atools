@@ -4,9 +4,9 @@
 .\"
 .Dd September 6, 2016
 .Os
-.Dt ACCOUNT_ALLOC_USAGE 1 CON
+.Dt ACCOUNT_CH_USAGE 1 CON
 .Sh NAME
-.Nm account_alloc_usage
+.Nm account_ch_usage
 .Nd account core hour usage notification
 .Sh SYNOPSIS
 .Nm
@@ -42,11 +42,11 @@ Re-run the usage, even if a report has been generated this month.
 .Sh EXAMPLES
 The command:
 .Pp
-.Dl "account_alloc_usage"
+.Dl "account_ch_usage"
 .Pp
 Will check the cpu hours for all the projects you are a member of. While,
 .Pp
-.Dl "account_alloc_usage -p 75 -a dtc-hurr"
+.Dl "account_ch_usage -p 75 -a dtc-hurr"
 .Pp
 will check the cpu hours for the dtc-hurr project and report if it has
 used more than 75% of the allocation this month.
@@ -55,7 +55,7 @@ An example of calling
 .Nm
 from a crontab would be:
 .Dl "MAILTO=Timothy.P.Brown@noaa.gov"
-.Dl "3 0 * * * account_alloc_usage -m"
+.Dl "3 0 * * * account_ch_usage -m"
 .Sh EXIT STATUS
 .Ex -std
 .Sh SEE ALSO
