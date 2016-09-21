@@ -95,6 +95,8 @@ check_du()
 	local file=""
 	local line=""
 	local per=0
+	local dname=""
+	local freport=""
 
 	for fs in "${FS[@]}" ; do
 
@@ -112,47 +114,49 @@ check_du()
 		fi
 
 		# see if we are on the file system
-		line=$(grep "^$acc" ${file})
-		per=0
-		if [ -n "$line" ] ; then
-			per=$(printf '%0.f'                 \
-				$(echo $line               |\
-				  grep -o '[[:digit:].]*%' |\
-				  tr -d '%'))
-		fi
-
-		if [ "$per" -ge "$PERCENT" ] ; then
-			if [ "${FULL}" -eq 1 ] &&\
-			   grep -q "lfs" <<<"$fs" ; then
-				line=$(sed -n ':s;/'"$acc"'/{:l;p;n;/^\w/bs;bl;}' $file)
-			else
-				line=""
+		while read -r line ; do
+			adname=${line[0]}
+			per=0
+			if [ -n "$line" ] ; then
+				per=$(printf '%0.f'                 \
+					$(echo ${line[@]}          |\
+					  grep -o '[[:digit:].]*%' |\
+					  tr -d '%'))
 			fi
 
-			if [ "$MAIL" -eq 1 ] ; then
-				# mail the user
-				mail -s "Jet ${acc} usage notification" \
-				     -r regress@noaa.gov                  \
-					Timothy.P.Brown@noaa.gov <<-EOB
-					Dear ${USER},
+			if [ "$per" -ge "$PERCENT" ] ; then
+				if [ "${FULL}" -eq 1 ] &&\
+				   grep -q "lfs" <<<"$fs" ; then
+					freport=$(sed -n ':s;/'"$acc"'/{:l;p;n;/^\w/bs;bl;}' $file)
+				fi
 
-					${acc} usage on ${fs} is currently at ${per}% of quota.
+				if [ "$MAIL" -eq 1 ] ; then
+					# mail the user
+					mail -s "Jet ${acc} usage notification" \
+					     -r regress@noaa.gov                  \
+						${USER}@noaa.gov <<-EOB
+						Dear ${USER},
 
-					${line}
+						${acc} usage on ${fs} is currently at ${per}% of quota.
 
-					Regards,
-					Jet Management
+						${freport}
 
-					Jet Help: Email rdhpcs.jet.help@noaa.gov
-					Jet Docs: https://wiki.rdhpcs.noaa.gov/wikis/jetdocs/
-					Jet System Status: http://rdhpcs.noaa.gov/boulder/systems/hpcsact.html
-					AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
-					EOB
-			else
-				echo "${acc} usage on ${fs} is currently at ${per}% of quota."
-				echo "${line}"
+						Regards,
+						Jet Management
+
+						Jet Help: Email rdhpcs.jet.help@noaa.gov
+						Jet Docs: https://wiki.rdhpcs.noaa.gov/wikis/jetdocs/
+						Jet System Status: http://rdhpcs.noaa.gov/boulder/systems/hpcsact.html
+						AIM Account Management: https://rdhpcs-s.noaa.gov/acctmgmt/
+						EOB
+				else
+					echo "${acc} usage on ${fs} is currently at ${per}% of quota."
+					if [ "${FULL}" -eq 1 ] ; then
+						echo "${freport}"
+					fi
+				fi
 			fi
-		fi
+		done < <(grep "^$acc" ${file})
 	done
 }
 
