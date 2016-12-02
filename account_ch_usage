@@ -17,6 +17,9 @@ MAIL=0                  # Default to stdout.
 RERUN=0                 # Default re-run (vs only notify once).
 UDIR="${HOME}/.atools"  # Usage directory
 
+# Full path of gbalance
+GBALANCE=/apps/mam/default/bin/gbalance
+
 #
 main()
 {
@@ -85,7 +88,7 @@ check_acc()
 {
 	local acc=$1
 	local per=$(printf '%0.f' \
-	      $(gbalance --quiet --format raw --show PercentUsed -a ${acc}))
+	      $(${GBALANCE} --quiet --format raw --show PercentUsed -a ${acc}))
 	if [ "$per" -ge "$PERCENT" ] ; then
 
 		# check to see if we have already reported
